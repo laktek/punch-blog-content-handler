@@ -69,24 +69,29 @@ describe("setup permalink patterns", function() {
 
 	it("set the post url pattern based on the given post url", function() {
 		blog_content_handler.setupURLPatterns(sample_config);
-		expect(blog_content_handler.postUrlPattern).toEqual(/^\/(\d\d\d\d)\/(\d\d)\/(\d\d)-([^\/\s]+)$/g);
+		expect(blog_content_handler.postUrlPattern).toEqual("\\/(\\d\\d\\d\\d)\\/(\\d\\d)\\/(\\d\\d)-([^\\/\\s]+)");
 	});
 
 	it("set the archive url patterns as an array", function() {
 		blog_content_handler.setupURLPatterns(sample_config);
-		expect(blog_content_handler.archiveUrlPatterns).toEqual([ /^\/history$/g, /^\/(\d\d\d\d)$/g, /\/(\d\d\d\d)\/(\d\d)/g, /\/(\d\d\d\d)\/(\d\d)\/(\d\d)/g, /\/tag\/([^\/s]+)/g ]);
+		expect(blog_content_handler.archiveUrlPatterns).toEqual([ "\\/history", "\\/(\\d\\d\\d\\d)", "\\/(\\d\\d\\d\\d)\\/(\\d\\d)", "\\/(\\d\\d\\d\\d)\\/(\\d\\d)\\/(\\d\\d)", "\\/tag\\/([^\\/\\s]+)" ]);
 	});
 });
 
 describe("is section", function() {
 
 	beforeEach(function() {
-		blog_content_handler.postUrlPattern = /^\/(\d\d\d\d)\/(\d\d)\/(\d\d)([^\/\s]+)$/g;
-		blog_content_handler.archiveUrlPatterns = [ /^\/archive$/g, /^\/(\d\d\d\d)$/g, /^\/(\d\d\d\d)\/(\d\d)$/g, /^\/(\d\d\d\d)\/(\d\d)\/(\d\d)$/g, /^\/tag\/([^\/s]+)$/g ];
+		var sample_config = {
+			blog: {
+				post_url: "/{year}/{month}/{date}-{title}"
+			}
+		}
+
+		blog_content_handler.setupURLPatterns(sample_config);
 	});
 
 	it("treat post urls as sections", function() {
-		expect(blog_content_handler.isSection("/2012/11/19/test-post")).toEqual(true);
+		expect(blog_content_handler.isSection("/2012/11/19-test-post")).toEqual(true);
 	});
 
 	it("treat /archive as a section", function() {
@@ -107,6 +112,10 @@ describe("is section", function() {
 		blog_content_handler.isSection("/section/sub");
 		expect(default_content_handler.isSection).toHaveBeenCalledWith("/section/sub");
 	});
+
+});
+
+describe("negotiate content", function() {
 
 });
 
