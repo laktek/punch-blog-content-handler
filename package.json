@@ -26,7 +26,6 @@
 	"dependencies": {
     "punch": ">= 0.4.0",
     "underscore": ">= 1.4.2",
-		"extract-values": "0.0.4",
 		"js-yaml": "1.0.3"
   },
   "devDependencies": {
