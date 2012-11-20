@@ -1,7 +1,10 @@
 var _ = require("underscore");
+var fs = require("fs");
+
 var blog_content_handler = require('../lib/blog_content_handler.js');
 var module_utils = require("punch").Utils.Module;
 var default_content_handler = require("punch").ContentHandler;
+var yaml = require("js-yaml");
 
 describe("setup", function() {
 
@@ -326,5 +329,204 @@ describe("get posts", function() {
 });
 
 describe("parse content", function() {
+	beforeEach(function() {
+		var sample_config = {
+			blog: {
+				post_url: "/{year}/{month}/{date}/{title}",
+			}
+		}
 
+		blog_content_handler.setupUrlPatterns(sample_config);
+	});
+
+	it("take the stat of given the post file", function() {
+		spyOn(fs, "stat");
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-20-test-post.md", true, spyCallback);
+
+		expect(fs.stat).toHaveBeenCalledWith("articles/2012-11-20-test-post.md", jasmine.any(Function));
+	});
+
+	it("read the given post file", function() {
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+				return callback(null, {});
+		});
+
+		spyOn(fs, "readFile");
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-20-test-post.md", true, spyCallback);
+
+		expect(fs.readFile).toHaveBeenCalledWith("articles/2012-11-20-test-post.md", jasmine.any(Function));
+	});
+
+	it("call the callback with the error if reading fails", function() {
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+			return callback(null, {});
+		});
+
+		spyOn(fs, "readFile").andCallFake(function(path, callback) {
+			return callback("error reading file", null);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-20-test-post.md", true, spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith("error reading file", null);
+	});
+
+	it("return the parsed YAML front matter", function() {
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+			return callback(null, { mtime: new Date(2012, 10, 20) });
+		});
+
+		spyOn(fs, "readFile").andCallFake(function(path, callback) {
+			return callback(null, "---key:value---content");
+		});
+
+		spyOn(yaml, "load").andCallFake(function(data) {
+			var parsed_data = data.split(":");
+			var result = {}
+		 	result[parsed_data[0]] = parsed_data[1];
+			return result;
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-18-test-post.md", false, spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { content: "content", key: "value", published_date: new Date(2012, 10, 18),
+																										 permalink: "/2012/11/18/test-post", last_modified: new Date(2012, 10, 20) });
+	});
+
+	it("return the unparsed output if YAML parsing gives an exception", function() {
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+			return callback(null, { mtime: new Date(2012, 10, 20) });
+		});
+
+		spyOn(fs, "readFile").andCallFake(function(path, callback) {
+			return callback(null, "---key:value---content");
+		});
+
+		spyOn(yaml, "load").andCallFake(function(data) {
+			raise("exception");
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-18-test-post.md", false, spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { content: "---key:value---content" });
+	});
+
+	it("parse the post body", function() {
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+			return callback(null, { mtime: new Date(2012, 10, 20) });
+		});
+
+		spyOn(fs, "readFile").andCallFake(function(path, callback) {
+			return callback(null, "---key:value---content");
+		});
+
+		spyOn(yaml, "load").andCallFake(function(data) {
+			var parsed_data = data.split(":");
+			var result = {}
+		 	result[parsed_data[0]] = parsed_data[1];
+			return result;
+		});
+
+		var spyParse = jasmine.createSpy().andCallFake(function(input, callback) {
+			return callback(null, "parsed content")
+		});
+		var dummyParser = { parse: spyParse }
+		blog_content_handler.parsers = { ".md": dummyParser }
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-18-test-post.md", true, spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { content: "parsed content", key: "value", published_date: new Date(2012, 10, 18),
+																										 permalink: "/2012/11/18/test-post", last_modified: new Date(2012, 10, 20) });
+	});
+
+	it("return the unparsed body if no parser found", function() {
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+			return callback(null, { mtime: new Date(2012, 10, 20) });
+		});
+
+		spyOn(fs, "readFile").andCallFake(function(path, callback) {
+			return callback(null, "---key:value---content");
+		});
+
+		spyOn(yaml, "load").andCallFake(function(data) {
+			var parsed_data = data.split(":");
+			var result = {}
+		 	result[parsed_data[0]] = parsed_data[1];
+			return result;
+		});
+
+		blog_content_handler.parsers = { }
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-18-test-post.md", true, spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { content: "content", key: "value", published_date: new Date(2012, 10, 18),
+																										 permalink: "/2012/11/18/test-post", last_modified: new Date(2012, 10, 20) });
+	});
+
+	it("set the permalink in user defined format", function() {
+		var sample_config = {
+			blog: {
+				post_url: "/{year}/{date}-{title}",
+			}
+		}
+
+		blog_content_handler.setupUrlPatterns(sample_config);
+
+		spyOn(fs, "stat").andCallFake(function(path, callback) {
+			return callback(null, { mtime: new Date(2012, 10, 20) });
+		});
+
+		spyOn(fs, "readFile").andCallFake(function(path, callback) {
+			return callback(null, "---key:value---content");
+		});
+
+		spyOn(yaml, "load").andCallFake(function(data) {
+			var parsed_data = data.split(":");
+			var result = {}
+		 	result[parsed_data[0]] = parsed_data[1];
+			return result;
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.parseContent("articles/2012-11-18-test-post.md", false, spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { content: "content", key: "value", published_date: new Date(2012, 10, 18),
+																										 permalink: "/2012/18-test-post", last_modified: new Date(2012, 10, 20) });
+	});
+
+
+
+});
+
+describe("get all posts", function() {
+
+	it("return the fetched posts if posts are already fetched", function() {
+		blog_content_handler.allPosts = { "post1": {}, "post2": {} };
+		blog_content_handler.lastModified = new Date(2012, 10, 20);
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getAllPosts(spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { "post1": {}, "post2": {} }, new Date(2012, 10, 20));
+	});
+
+	it("fetch and return all posts if no posts are fetched", function() {
+		blog_content_handler.allPosts = {};
+
+		spyOn(blog_content_handler, "fetchAllPosts");
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getAllPosts(spyCallback);
+
+		expect(blog_content_handler.fetchAllPosts).toHaveBeenCalledWith(spyCallback);
+	});
 });
