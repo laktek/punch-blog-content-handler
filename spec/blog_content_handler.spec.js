@@ -234,7 +234,94 @@ describe("negotiate content", function() {
 });
 
 describe("get content paths", function() {
+	beforeEach(function() {
+		var sample_config = {
+			blog: {
+				post_url: "/{year}/{month}/{date}/{title}",
+				archive_urls: {
+					"all": "/archive",
+					"tag": "/tagged/{tag}"
+				}
+			}
+		}
 
+		blog_content_handler.setupUrlPatterns(sample_config);
+	});
+
+	it("fetch other content paths from default content handler", function() {
+		spyOn(default_content_handler, "getContentPaths");
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getContentPaths("/", spyCallback);
+
+		expect(default_content_handler.getContentPaths).toHaveBeenCalledWith("/", jasmine.any(Function));
+	});
+
+	it("fetch all posts before determining paths", function() {
+		spyOn(default_content_handler, "getContentPaths").andCallFake(function(path, callback) {
+			return callback(null, []);
+		});
+		spyOn(blog_content_handler, "getAllPosts");
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getContentPaths("/", spyCallback);
+
+		expect(blog_content_handler.getAllPosts).toHaveBeenCalledWith(jasmine.any(Function));
+	});
+
+	it("include all post permalinks", function() {
+		blog_content_handler.tagCounts = {};
+		blog_content_handler.postDates = {};
+
+		spyOn(default_content_handler, "getContentPaths").andCallFake(function(path, callback) {
+			return callback(null, []);
+		});
+		spyOn(blog_content_handler, "getAllPosts").andCallFake(function(callback) {
+			return callback(null, { "post1": { "permalink": "/2012/11/20/test-post1" }, "post2": { "permalink": "/2012/11/20/test-post2" }, "post3": { "permalink": "/2012/11/20/test-post3" } });
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getContentPaths("/", spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/2012/11/20/test-post1", "/2012/11/20/test-post2", "/2012/11/20/test-post3" ]);
+	});
+
+	it("set the paths for all tags", function() {
+		blog_content_handler.tagCounts = { "tag1": 10, "tag2": 20, "tag3": 30 };
+		blog_content_handler.postDates = {};
+
+		spyOn(default_content_handler, "getContentPaths").andCallFake(function(path, callback) {
+			return callback(null, []);
+		});
+		spyOn(blog_content_handler, "getAllPosts").andCallFake(function(callback) {
+			return callback(null, { });
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getContentPaths("/", spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/tagged/tag1", "/tagged/tag2", "/tagged/tag3" ]);
+	});
+
+	it("set the paths for all post dates", function() {
+		blog_content_handler.tagCounts = {};
+		blog_content_handler.postDates = { "2011": { "11": ["19", "20"] }, "2012": { "11": ["19"], "09": ["19"] } };
+
+		spyOn(default_content_handler, "getContentPaths").andCallFake(function(path, callback) {
+			return callback(null, []);
+		});
+		spyOn(blog_content_handler, "getAllPosts").andCallFake(function(callback) {
+			return callback(null, { });
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getContentPaths("/", spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/2011/11/19", "/2011/11", "/2011",
+																										 "/2011/11/20",
+																										 "/2012/11/19", "/2012/11", "/2012",
+																										 "/2012/09/19", "/2012/09"
+																						]);
+	});
 });
 
 describe("get a post", function() {
@@ -529,4 +616,120 @@ describe("get all posts", function() {
 
 		expect(blog_content_handler.fetchAllPosts).toHaveBeenCalledWith(spyCallback);
 	});
+});
+
+describe("fetch all posts", function() {
+	beforeEach(function() {
+		blog_content_handler.postsDir = "posts";
+	});
+
+	it("read the posts directory", function() {
+		spyOn(fs, "readdir");
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(fs.readdir).toHaveBeenCalledWith("posts", jasmine.any(Function));
+	});
+
+	it("call the callback with the error if reading directory fails", function() {
+		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
+			return callback("error reading dir", null);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith("error reading dir", null);
+	});
+
+	it("parse each post file", function() {
+		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
+			return callback(null, [ "first_post", "second_post", "third_post" ]);
+		});
+
+		spyOn(blog_content_handler, "parseContent").andCallFake(function(path, parse_post, callback) {
+			return callback("skip", null);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(blog_content_handler.parseContent.calls.length).toEqual(3);;
+	});
+
+	it("set the last modified to the latest post's modifiecation date", function() {
+		blog_content_handler.lastModified = null;
+
+		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
+			return callback(null, [ "first_post", "second_post", "third_post" ]);
+		});
+
+		spyOn(blog_content_handler, "parseContent").andCallFake(function(path, parse_post, callback) {
+			if (path === "posts/first_post") {
+				output = { "last_modified": new Date(2012, 10, 19), "published_date": new Date(2012, 10, 19) };
+			} else if (path === "posts/second_post") {
+				output = { "last_modified": new Date(2012, 10, 20), "published_date": new Date(2012, 10, 19) };
+			} else if (path === "posts/third_post") {
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2012, 10, 19)  };
+			}
+			return callback(null, output);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(blog_content_handler.lastModified).toEqual(new Date(2012, 10, 21));;
+	});
+
+	it("set the tag counts", function() {
+		blog_content_handler.tagCounts = {};
+
+		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
+			return callback(null, [ "first_post", "second_post", "third_post" ]);
+		});
+
+		spyOn(blog_content_handler, "parseContent").andCallFake(function(path, parse_post, callback) {
+			if (path === "posts/first_post") {
+				output = { "last_modified": new Date(2012, 10, 19), "published_date": new Date(2012, 10, 19), "tags": [ "tag1", "tag2", "tag3" ] };
+			} else if (path === "posts/second_post") {
+				output = { "last_modified": new Date(2012, 10, 20), "published_date": new Date(2012, 10, 19), "tags": [ "tag3" ] };
+			} else if (path === "posts/third_post") {
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2012, 10, 19), "tags": [ "tag2", "tag3" ]  };
+			}
+			return callback(null, output);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(blog_content_handler.tagCounts).toEqual({ "tag1": 1, "tag2": 2, "tag3": 3 });
+	});
+
+	it("set the post dates", function() {
+		blog_content_handler.postDates = {};
+
+		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
+			return callback(null, [ "first_post", "second_post", "third_post", "fourth_post" ]);
+		});
+
+		spyOn(blog_content_handler, "parseContent").andCallFake(function(path, parse_post, callback) {
+			if (path === "posts/first_post") {
+				output = { "last_modified": new Date(2012, 10, 19), "published_date": new Date(2012, 10, 19), "tags": [ "tag1", "tag2", "tag3" ] };
+			} else if (path === "posts/second_post") {
+				output = { "last_modified": new Date(2012, 10, 20), "published_date": new Date(2012, 08, 19), "tags": [ "tag3" ] };
+			} else if (path === "posts/third_post") {
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2011, 10, 19), "tags": [ "tag2", "tag3" ]  };
+			} else if (path === "posts/fourth_post") {
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2011, 10, 20), "tags": [ "tag2", "tag3" ]  };
+			}
+			return callback(null, output);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(blog_content_handler.postDates).toEqual({ "2011": { "11": ["19", "20"] }, "2012": { "11": ["19"], "09": ["19"] } });
+	});
+
 });
