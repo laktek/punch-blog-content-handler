@@ -278,7 +278,7 @@ describe("get content paths", function() {
 	});
 
 	it("set the paths for all tags", function() {
-		blog_content_handler.tagCounts = { "tag1": 10, "tag2": 20, "tag3": 30 };
+		blog_content_handler.tagCounts = { "tag1": 10, "Tag2": 20, "tagB": 30 };
 		blog_content_handler.postDates = {};
 
 		spyOn(default_content_handler, "getContentPaths").andCallFake(function(path, callback) {
@@ -291,7 +291,7 @@ describe("get content paths", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getContentPaths("/", spyCallback);
 
-		expect(spyCallback).toHaveBeenCalledWith(null, [ "/archive", "/tagged/tag1", "/tagged/tag2", "/tagged/tag3" ]);
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/archive", "/tagged/tag1", "/tagged/tag2", "/tagged/tagb" ]);
 	});
 
 	it("set the paths for all post dates", function() {
