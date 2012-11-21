@@ -1,7 +1,7 @@
 {
   "name": "punch-blog-content-handler",
   "title": "Punch Blog Content Handler",
-  "description": "Use this special content handler to run blogs with Punch.",
+  "description": "A special content handler to manage a blog with Punch.",
   "version": "0.0.1",
   "homepage": "https://github.com/laktek/punch-blog-content-handler",
   "author": {
