@@ -56,18 +56,16 @@ describe("setup", function() {
 		spyOn(blog_content_handler, "setupUrlPatterns");
 
 		blog_content_handler.setup(sample_config);
-		expect(blog_content_handler.setupUrlPatterns).toHaveBeenCalledWith(sample_config);
+		expect(blog_content_handler.setupUrlPatterns).toHaveBeenCalledWith(sample_config.blog);
 	});
 
 });
 
 describe("setup URL patterns", function() {
 	var sample_config = {
-		blog: {
-			post_url: "/{year}/{month}/{date}-{title}",
-			archive_urls: {
-				"all": "/history"
-			}
+		post_url: "/{year}/{month}/{date}-{title}",
+		archive_urls: {
+			"all": "/history"
 		}
 	}
 
@@ -90,9 +88,7 @@ describe("is section", function() {
 
 	beforeEach(function() {
 		var sample_config = {
-			blog: {
-				post_url: "/{year}/{month}/{date}-{title}"
-			}
+			post_url: "/{year}/{month}/{date}-{title}"
 		}
 
 		blog_content_handler.setupUrlPatterns(sample_config);
@@ -140,9 +136,7 @@ describe("negotiate content", function() {
 
 	beforeEach(function() {
 		var sample_config = {
-			blog: {
-				post_url: "/{year}/{month}/{date}-{title}"
-			}
+			post_url: "/{year}/{month}/{date}-{title}"
 		}
 
 		blog_content_handler.setupUrlPatterns(sample_config);
@@ -236,12 +230,10 @@ describe("negotiate content", function() {
 describe("get content paths", function() {
 	beforeEach(function() {
 		var sample_config = {
-			blog: {
-				post_url: "/{year}/{month}/{date}/{title}",
-				archive_urls: {
-					"all": "/archive",
-					"tag": "/tagged/{tag}"
-				}
+			post_url: "/{year}/{month}/{date}/{title}",
+			archive_urls: {
+				"all": "/archive",
+				"tag": "/tagged/{tag}"
 			}
 		}
 
@@ -282,7 +274,7 @@ describe("get content paths", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getContentPaths("/", spyCallback);
 
-		expect(spyCallback).toHaveBeenCalledWith(null, [ "/2012/11/20/test-post1", "/2012/11/20/test-post2", "/2012/11/20/test-post3" ]);
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/2012/11/20/test-post1", "/2012/11/20/test-post2", "/2012/11/20/test-post3", "/archive" ]);
 	});
 
 	it("set the paths for all tags", function() {
@@ -299,7 +291,7 @@ describe("get content paths", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getContentPaths("/", spyCallback);
 
-		expect(spyCallback).toHaveBeenCalledWith(null, [ "/tagged/tag1", "/tagged/tag2", "/tagged/tag3" ]);
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/archive", "/tagged/tag1", "/tagged/tag2", "/tagged/tag3" ]);
 	});
 
 	it("set the paths for all post dates", function() {
@@ -316,7 +308,8 @@ describe("get content paths", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getContentPaths("/", spyCallback);
 
-		expect(spyCallback).toHaveBeenCalledWith(null, [ "/2011/11/19", "/2011/11", "/2011",
+		expect(spyCallback).toHaveBeenCalledWith(null, [ "/archive",
+		 																								 "/2011/11/19", "/2011/11", "/2011",
 																										 "/2011/11/20",
 																										 "/2012/11/19", "/2012/11", "/2012",
 																										 "/2012/09/19", "/2012/09"
@@ -343,7 +336,7 @@ describe("get a post", function() {
 		spyOn(blog_content_handler, "parseContent");
 
 		var spyCallback = jasmine.createSpy();
-		blog_content_handler.getPost("/2012/11/20-test-post", spyCallback);
+		blog_content_handler.getPost("/2012/11/20-test-post/index", spyCallback);
 
 		expect(blog_content_handler.parseContent).toHaveBeenCalledWith("articles/2012-11-20-test-post.md", true, jasmine.any(Function));
 	});
@@ -354,16 +347,16 @@ describe("get a post", function() {
 		});
 
 		var spyCallback = jasmine.createSpy();
-		blog_content_handler.getPost("/2012/11/20-test-post", spyCallback);
+		blog_content_handler.getPost("/2012/11/20-test-post/index", spyCallback);
 
 		expect(spyCallback).toHaveBeenCalledWith(null, { "last_modified": new Date(2012, 10, 20), "title": "test post" }, new Date(2012, 10, 20))
 	});
 
 	it("call the callback with an error if the given path is invalid", function() {
 		var spyCallback = jasmine.createSpy();
-		blog_content_handler.getPost("/2012/11/20/test-post", spyCallback);
+		blog_content_handler.getPost("/2012/11/20/test-post/index", spyCallback);
 
-		expect(spyCallback).toHaveBeenCalledWith("[Error: Content for /2012/11/20/test-post not found]", null);
+		expect(spyCallback).toHaveBeenCalledWith("[Error: Content for /2012/11/20/test-post/index not found]", null);
 	});
 });
 
@@ -561,9 +554,7 @@ describe("parse content", function() {
 
 	it("set the permalink in user defined format", function() {
 		var sample_config = {
-			blog: {
-				post_url: "/{year}/{date}-{title}",
-			}
+			post_url: "/{year}/{date}-{title}",
 		}
 
 		blog_content_handler.setupUrlPatterns(sample_config);
