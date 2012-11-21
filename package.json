@@ -2,7 +2,7 @@
   "name": "punch-blog-content-handler",
   "title": "Punch Blog Content Handler",
   "description": "A special content handler to manage a blog with Punch.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/laktek/punch-blog-content-handler",
   "author": {
     "name": "Lakshan Perera",
@@ -23,10 +23,10 @@
     }
   ],
   "main": "lib/blog_content_handler",
-	"dependencies": {
+  "dependencies": {
     "punch": ">= 0.4.0",
     "underscore": ">= 1.4.2",
-		"js-yaml": "1.0.3"
+    "js-yaml": "1.0.3"
   },
   "devDependencies": {
     "jasmine-node": ">= 1.0.26",
@@ -38,5 +38,9 @@
   "scripts": {
     "test": "jasmine-node spec"
   },
-  "keywords": [ "punch", "blog", "content-handler" ]
+  "keywords": [
+    "punch",
+    "blog",
+    "content-handler"
+  ]
 }
