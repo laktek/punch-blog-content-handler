@@ -597,7 +597,7 @@ describe("get all posts", function() {
 		expect(spyCallback).toHaveBeenCalledWith(null, { "post1": {}, "post2": {} }, new Date(2012, 10, 20));
 	});
 
-	it("fetch and return all posts if no posts are fetched", function() {
+	it("fetch and return all posts if no posts have been fetched", function() {
 		blog_content_handler.allPosts = {};
 
 		spyOn(blog_content_handler, "fetchAllPosts");
@@ -721,6 +721,30 @@ describe("fetch all posts", function() {
 		blog_content_handler.fetchAllPosts(spyCallback);
 
 		expect(blog_content_handler.postDates).toEqual({ "2011": { "11": ["19", "20"] }, "2012": { "11": ["19"], "09": ["19"] } });
+	});
+
+	it("call the callback with all posts and last modified date", function() {
+		blog_content_handler.lastModified = null;
+
+		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
+			return callback(null, [ "first_post", "second_post", "third_post" ]);
+		});
+
+		spyOn(blog_content_handler, "parseContent").andCallFake(function(path, parse_post, callback) {
+			if (path === "posts/first_post") {
+				output = { "last_modified": new Date(2012, 10, 19), "published_date": new Date(2012, 10, 19) };
+			} else if (path === "posts/second_post") {
+				output = { "last_modified": new Date(2012, 10, 20), "published_date": new Date(2012, 10, 19) };
+			} else if (path === "posts/third_post") {
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2012, 10, 19)  };
+			}
+			return callback(null, output);
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.fetchAllPosts(spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, {}, new Date(2012, 10, 21));;
 	});
 
 });
