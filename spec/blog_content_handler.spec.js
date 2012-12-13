@@ -74,6 +74,11 @@ describe("setup URL patterns", function() {
 		expect(blog_content_handler.postUrl).toEqual({ "pattern": "\\/(\\d\\d\\d\\d)\\/(\\d\\d)\\/(\\d\\d)-([^\\/\\s]+)", "mappings": { 'year': 1, 'month': 2, 'date': 3, 'title': 4 }});
 	});
 
+	it("set the post file name pattern based on the given post url", function() {
+		blog_content_handler.setupUrlPatterns(sample_config);
+		expect(blog_content_handler.postFileNameRegex).toEqual("^\\S+\/(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)-([^\\/\\s]+)\\.\\S+$");
+	});
+
 	it("set the archive url patterns as an array", function() {
 		blog_content_handler.setupUrlPatterns(sample_config);
 		expect(blog_content_handler.archiveUrls).toEqual([ { "pattern": "\\/history", "mappings": {} },
@@ -108,6 +113,10 @@ describe("is section", function() {
 
 	it("treat year-months archives as a section", function() {
 		expect(blog_content_handler.isSection("/2012/10")).toEqual(true);
+	});
+
+	it("don't treat /index as a section (since it's already a section)", function() {
+		expect(blog_content_handler.isSection("/index")).toEqual(false);
 	});
 
 	it("delegate other urls to default content handler", function() {
@@ -360,6 +369,49 @@ describe("get a post", function() {
 	});
 });
 
+describe("get a post (with a different URL structure)", function() {
+
+	beforeEach(function() {
+		var sample_config = {
+			blog: {
+				post_url: "/{title}",
+				post_format: "md",
+				posts_dir: "articles"
+			},
+			plugins: {}
+		}
+
+		blog_content_handler.setup(sample_config);
+	});
+
+	it("call parse content with the correct file path", function() {
+		spyOn(blog_content_handler, "parseContent");
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getPost("/test-post/index", spyCallback);
+
+		expect(blog_content_handler.parseContent).toHaveBeenCalledWith("articles/test-post.md", true, jasmine.any(Function));
+	});
+
+	it("call the callback with the output from parse content", function() {
+		spyOn(blog_content_handler, "parseContent").andCallFake(function(path, parse_post, callback) {
+			return callback(null, { "last_modified": new Date(2012, 10, 20), "title": "test post" });
+		});
+
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getPost("/test-post/index", spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith(null, { "last_modified": new Date(2012, 10, 20), "title": "test post" }, new Date(2012, 10, 20))
+	});
+
+	it("call the callback with an error if the given path is invalid", function() {
+		var spyCallback = jasmine.createSpy();
+		blog_content_handler.getPost("/2012/test-post/index", spyCallback);
+
+		expect(spyCallback).toHaveBeenCalledWith("[Error: Content for /2012/test-post/index not found]", null);
+	});
+});
+
 describe("get posts", function() {
 
 	var dummy_posts_obj = {
@@ -560,7 +612,7 @@ describe("parse content", function() {
 		blog_content_handler.setupUrlPatterns(sample_config);
 
 		spyOn(fs, "stat").andCallFake(function(path, callback) {
-			return callback(null, { mtime: new Date(2012, 10, 20) });
+			return callback(null, { mtime: new Date(2012, 10, 20), ctime: new Date(2012, 10, 18) });
 		});
 
 		spyOn(fs, "readFile").andCallFake(function(path, callback) {
@@ -575,13 +627,11 @@ describe("parse content", function() {
 		});
 
 		var spyCallback = jasmine.createSpy();
-		blog_content_handler.parseContent("articles/2012-11-18-test-post.md", false, spyCallback);
+		blog_content_handler.parseContent("articles/2012-18-test-post.md", false, spyCallback);
 
 		expect(spyCallback).toHaveBeenCalledWith(null, { content: "content", key: "value", published_date: new Date(2012, 10, 18),
 																										 permalink: "/2012/18-test-post", last_modified: new Date(2012, 10, 20) });
 	});
-
-
 
 });
 
@@ -712,7 +762,7 @@ describe("fetch all posts", function() {
 			} else if (path === "posts/third_post") {
 				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2011, 10, 19), "tags": [ "tag2", "tag3" ]  };
 			} else if (path === "posts/fourth_post") {
-				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2011, 10, 20), "tags": [ "tag2", "tag3" ]  };
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": undefined, "tags": [ "tag2", "tag3" ]  };
 			}
 			return callback(null, output);
 		});
@@ -720,7 +770,7 @@ describe("fetch all posts", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.fetchAllPosts(spyCallback);
 
-		expect(blog_content_handler.postDates).toEqual({ "2011": { "11": ["19", "20"] }, "2012": { "11": ["19"], "09": ["19"] } });
+		expect(blog_content_handler.postDates).toEqual({ "2011": { "11": ["19"] }, "2012": { "11": ["19"], "09": ["19"] } });
 	});
 
 	it("call the callback with all posts and last modified date", function() {
