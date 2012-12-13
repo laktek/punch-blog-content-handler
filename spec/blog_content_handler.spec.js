@@ -541,7 +541,7 @@ describe("parse content", function() {
 		});
 
 		spyOn(yaml, "load").andCallFake(function(data) {
-			raise("exception");
+			throw("exception");
 		});
 
 		var spyCallback = jasmine.createSpy();
