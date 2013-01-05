@@ -2,7 +2,7 @@
   "name": "punch-blog-content-handler",
   "title": "Punch Blog Content Handler",
   "description": "A special content handler to manage a blog with Punch.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "homepage": "https://github.com/laktek/punch-blog-content-handler",
   "author": {
     "name": "Lakshan Perera",
