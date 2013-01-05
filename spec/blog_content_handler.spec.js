@@ -604,7 +604,7 @@ describe("parse content", function() {
 																										 permalink: "/2012/11/18/test-post", last_modified: new Date(2012, 10, 20) });
 	});
 
-	it("set the permalink in user defined format", function() {
+	it("set the permalink in user defined format (and published date based on the last modified)", function() {
 		var sample_config = {
 			post_url: "/{year}/{date}-{title}",
 		}
