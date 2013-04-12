@@ -431,31 +431,31 @@ describe("get posts", function() {
 	it("return all posts for /archive", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getPosts("/archive/index", spyCallback);
-		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_4"], dummy_posts_obj["post_3"], dummy_posts_obj["post_2"], dummy_posts_obj["post_1"] ] }, new Date(2012, 10, 20));
+		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_4"], dummy_posts_obj["post_3"], dummy_posts_obj["post_2"], dummy_posts_obj["post_1"] ], "section": "" }, new Date(2012, 10, 20));
 	});
 
 	it("return posts tagged test2", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getPosts("/tag/test2/index", spyCallback);
-		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_3"], dummy_posts_obj["post_2"] ] }, new Date(2012, 10, 20));
+		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_3"], dummy_posts_obj["post_2"] ], "section": "test2" }, new Date(2012, 10, 20));
 	});
 
 	it("return posts published in 2011", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getPosts("/2011/index", spyCallback);
-		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_1"] ] }, new Date(2012, 10, 20));
+		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_1"] ], "section": "2011" }, new Date(2012, 10, 20));
 	});
 
 	it("return posts published in February 2012", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getPosts("/2012/02/index", spyCallback);
-		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_4"], dummy_posts_obj["post_3"], dummy_posts_obj["post_2"] ] }, new Date(2012, 10, 20));
+		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_4"], dummy_posts_obj["post_3"], dummy_posts_obj["post_2"] ], "section": "2012 02" }, new Date(2012, 10, 20));
 	});
 
 	it("return posts published on 3rd February 2012", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.getPosts("/2012/02/03/index", spyCallback);
-		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_4"], dummy_posts_obj["post_3"] ] }, new Date(2012, 10, 20));
+		expect(spyCallback).toHaveBeenCalledWith(null, { "posts": [ dummy_posts_obj["post_4"], dummy_posts_obj["post_3"] ], "section": "2012 02 03" }, new Date(2012, 10, 20));
 	});
 
 });
