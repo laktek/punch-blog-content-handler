@@ -24,7 +24,7 @@
   ],
   "main": "lib/blog_content_handler",
   "dependencies": {
-    "punch": ">= 0.4.0",
+    "punch": ">= 0.5.27",
     "underscore": ">= 1.4.2",
     "js-yaml": "1.0.3"
   },
