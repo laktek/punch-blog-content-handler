@@ -700,7 +700,7 @@ describe("fetch all posts", function() {
 		expect(blog_content_handler.parseContent.calls.length).toEqual(3);;
 	});
 
-	it("set the last modified to the latest post's modifiecation date", function() {
+	it("set the last modified to the latest post's modification date", function() {
 		blog_content_handler.lastModified = null;
 
 		spyOn(fs, "readdir").andCallFake(function(posts_dir, callback) {
@@ -757,11 +757,11 @@ describe("fetch all posts", function() {
 
 		spyOn(blog_content_handler, "parseContent").andCallFake(function(file_path, parse_post, callback) {
 			if (file_path === "posts" + path.sep + "first_post") {
-				output = { "last_modified": new Date(2012, 10, 19), "published_date": new Date(2012, 10, 19), "tags": [ "tag1", "tag2", "tag3" ] };
+				output = { "last_modified": new Date(2012, 10, 19), "published_date": new Date(2012, 10, 19), "tags": [ "tag1", "tag2", "tag3" ], "published": "false"  };
 			} else if (file_path === "posts" + path.sep + "second_post") {
-				output = { "last_modified": new Date(2012, 10, 20), "published_date": new Date(2012, 08, 19), "tags": [ "tag3" ] };
+				output = { "last_modified": new Date(2012, 10, 20), "published_date": new Date(2012, 08, 19), "tags": [ "tag3" ], "published": "true"  };
 			} else if (file_path === "posts" + path.sep + "third_post") {
-				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2011, 10, 19), "tags": [ "tag2", "tag3" ]  };
+				output = { "last_modified": new Date(2012, 10, 21), "published_date": new Date(2011, 10, 19), "tags": [ "tag2", "tag3" ], "published": "true"  };
 			} else if (file_path === "posts" + path.sep + "fourth_post") {
 				output = { "last_modified": new Date(2012, 10, 21), "published_date": undefined, "tags": [ "tag2", "tag3" ]  };
 			}
@@ -771,7 +771,8 @@ describe("fetch all posts", function() {
 		var spyCallback = jasmine.createSpy();
 		blog_content_handler.fetchAllPosts(spyCallback);
 
-		expect(blog_content_handler.postDates).toEqual({ "2011": { "11": ["19"] }, "2012": { "11": ["19"], "09": ["19"] } });
+		expect(blog_content_handler.postDates).toEqual({ "2011": { "11": ["19"] }, "2012": { "09": ["19"] } });
+
 	});
 
 	it("call the callback with all posts and last modified date", function() {
